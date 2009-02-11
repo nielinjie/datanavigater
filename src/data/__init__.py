@@ -3,7 +3,7 @@ class Data(object):
     
     def __init__(self):
         self.tables={}
-        self.links=[]
+        self.links={}
         pass
     def ls(self):
         pass
@@ -37,3 +37,9 @@ class PostgresDataDescripter(DataDescripter):
     def getEngine(self):
         return sqlalchemy.create_engine('postgres://%s:%s@%s:%s/%s' % (self.userName,self.passwd,self.host,self.port,self.dbname))
 DataDescripter._descripters.update({'postgres':PostgresDataDescripter})
+class SqliteDataDescripter(DataDescripter):
+    def __init__(self,**kwd):
+        self.path=kwd['path']
+    def getEngine(self):
+        return sqlalchemy.create_engine('sqlite:///%s' % (self.path))
+DataDescripter._descripters.update({'sqlite':SqliteDataDescripter})
