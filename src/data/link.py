@@ -3,12 +3,12 @@ import logging
 import copy
 class ResuriceFKException(BaseException):pass
 class LinkNode(object):
-    def __init__(self,fromTable,fromColumn,toTable,toColumn,linkType="vfk"):
+    def __init__(self,fromTable,fromColumn,toTable,toColumn,linkType="rfk"):
         self.fromTable=fromTable
         self.fromColumn=fromColumn
         self.toTable=toTable
         self.toColumn=toColumn
-        assert linkType in ('vfk','fk')
+        assert linkType in ('rfk','fk','join')
         self.linkType=linkType
     def __str__(self):
         return '%s(%s)--%s-->(%s)%s' % (self.fromTable,self.fromColumn,self.linkType,self.toColumn,self.toTable)
