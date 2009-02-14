@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import logging
-
+import types
 class ExitRequest(Exception):
     pass
 from control.commands import CommandValidateException,CommandRuntimeException
@@ -16,12 +16,27 @@ class Context(object):
                 self._promoter=defaultPromoter
         return self._promoter
     def __init__(self,promoter=None, parent=None):
+        assert promoter==None or type(promoter) in types.StringTypes
+        assert parent==None or isinstance(parent,Context)
         self._parent=parent
         self._promoter=promoter
     def __exit__(self,exc_type, exc_val, exc_tb):
         pass
     def __enter__(self):
         raise NotImplementedError()
+    def getNextStepContext(self):
+        return None
+class InternalContext(Context):
+    def __enter__(self):
+        return self._run()
+    def _run(self):
+        return self
+class DisplayContext(InternalContext):
+    def __init__(self,textFun,promoter=None,parent=None):
+        super(DisplayContext,self).__init__(promoter=promoter,parent=parent)
+        self.textFun=textFun
+    def _run(self):
+        print self._getPromoter()+self.textFun()
 class CommandContext(Context):
     def __init__(self,commands,promoter=None,parent=None):
         super(CommandContext,self).__init__(promoter,parent)
@@ -55,12 +70,28 @@ class StepsContext(Context):
             logging.debug(currentStep)
             with currentStep:pass
             logging.debug('out from step context')
-            currentStep=currentStep.getNextStepContext()
+            currentStep=currentStep.getNextStepContext() 
+def join(fromContext, toContext):
+    fromContext.getNextStepContext=lambda : toContext
+def ifElse(conditionFun,trueNextContext,falseNextContext):
+    assert trueNextContext._parent==falseNextContext._parent
+    internal=InternalContext(parent=trueNextContext._parent)
+    internal.__enter__=lambda : trueNextContext.__enter__() if conditionFun() else falseNextContext.__enter__()
+    internal.getNextStepContext=lambda: trueNextContext.getNextStepContext() if conditionFun() else falseNextContext.getNextStepContext()
+    return internal
+
             
 class QuestionContext(CommandContext):
-    def __init__(self,question,commands,promoter=None,parent=None):
+    def __init__(self,question,commands,dynQuesionCreaterFun=None,promoter=None,parent=None):
+        assert dynQuesionCreaterFun==None or type(dynQuesionCreaterFun)==types.FunctionType
         super(QuestionContext,self).__init__(commands,promoter,parent)
         self.question=question
+        self._dynQuesionCreaterFun=dynQuesionCreaterFun
     def __enter__(self):
-        print self._getPromoter()+self.question+'...'
+        print self._getPromoter()+self.question+self._dynQuesionCreaterFun() if self._dynQuesionCreaterFun!=None else ''
         return super(QuestionContext,self).__enter__()
+from control.commands import ChoseCommands
+import util
+class ChoseQuestionContext(QuestionContext):
+    def __init__(self,question,optionsCreaterFun,promoter=None,parent=None):
+        super(ChoseQuestionContext,self).__init__(question+'\n',ChoseCommands(lambda: range(0,len(optionsCreaterFun()))),lambda:util.getListedItems(optionsCreaterFun,lambda obj:obj),promoter,parent)

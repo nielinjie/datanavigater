@@ -47,8 +47,8 @@ class YesNoCommands(MethodesCommands):
         raise ExitRequest('exited.')
 class ChoseCommands(BasicCommands):
     format='1,3-7'
-    def __init__(self,options,multiple=False):
-        self._options=options
+    def __init__(self,optionsCreateFun,multiple=False):
+        self._optionsCreateFun=optionsCreateFun
         self._multiple=multiple
     def _dispatch(self,commandName,*args):
         rs=[]
@@ -66,7 +66,7 @@ class ChoseCommands(BasicCommands):
         if len(rs)>1 and not self._multiple:
             raise CommandValidateException('Only one chose allowed.')
         for c in rs:
-            if not c in self._options:
+            if not c in self._optionsCreateFun():
                 raise CommandValidateException("'%s' is not in options." % c)
         self._context.result=rs
         raise ExitRequest('')
