@@ -1,6 +1,7 @@
 import sqlalchemy
+
 class Data(object):
-    
+    connections=['test moke connection']
     def __init__(self):
         self.tables={}
         self.links={}
@@ -9,6 +10,8 @@ class Data(object):
         pass
     def select(self,tables):
         pass
+    def listLinks(self,tableName):
+        return self.links.setdefault(tableName,[])
 class DataDescripter(object):
     _descripters={}
     def getEngine(self):

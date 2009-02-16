@@ -65,16 +65,20 @@ class ChoseCommands(BasicCommands):
                 rs.extend(range(int(parts[0]),int(parts[1])+1))
         if len(rs)>1 and not self._multiple:
             raise CommandValidateException('Only one chose allowed.')
+        options=self._optionsCreateFun()
         for c in rs:
-            if not c in self._optionsCreateFun():
+            if not c in range(0,len(options)):
                 raise CommandValidateException("'%s' is not in options." % c)
-        self._context.result=rs
+        result=[]
+        for r in rs:
+            result.append(options[r])
+        self._context.result=result
         raise ExitRequest('')
 class TextInputCommands(BasicCommands):
     def __init__(self,validatingRe=None):
         self._validatingRe=validatingRe
     def _dispatch(self,commandName,*arg):
-        text=commandName+' '+' '.join(arg)
+        text=commandName+('' if len(arg)==0 else (' '+' '.join(arg)))
         if self._validatingRe!=None:
             if not re.match(self._validaterFun,text):
                 raise CommandValidateException("Validate failed, please input %s" % self._validatingRe)

@@ -20,12 +20,21 @@ class Context(object):
         assert parent==None or isinstance(parent,Context)
         self._parent=parent
         self._promoter=promoter
+        self._resultConsumer=None
+        self._result=None
     def __exit__(self,exc_type, exc_val, exc_tb):
         pass
     def __enter__(self):
         raise NotImplementedError()
     def getNextStepContext(self):
         return None
+    def _setResult(self,result):
+        self._result=result
+        if self._resultConsumer!=None:
+            self._resultConsumer(self._result)
+    def _getResult(self):
+        return self._result
+    result=property(fget=_getResult,fset=_setResult)
 class InternalContext(Context):
     def __enter__(self):
         return self._run()
@@ -88,10 +97,10 @@ class QuestionContext(CommandContext):
         self.question=question
         self._dynQuesionCreaterFun=dynQuesionCreaterFun
     def __enter__(self):
-        print self._getPromoter()+self.question+self._dynQuesionCreaterFun() if self._dynQuesionCreaterFun!=None else ''
+        print self._getPromoter()+self.question+(self._dynQuesionCreaterFun() if self._dynQuesionCreaterFun!=None else '')
         return super(QuestionContext,self).__enter__()
 from control.commands import ChoseCommands
 import util
 class ChoseQuestionContext(QuestionContext):
-    def __init__(self,question,optionsCreaterFun,promoter=None,parent=None):
-        super(ChoseQuestionContext,self).__init__(question+'\n',ChoseCommands(lambda: range(0,len(optionsCreaterFun()))),lambda:util.getListedItems(optionsCreaterFun,lambda obj:obj),promoter,parent)
+    def __init__(self,question,optionsCreaterFun,optionsDescriptorFun,fixedItems,promoter=None,parent=None):
+        super(ChoseQuestionContext,self).__init__(question+'\n',ChoseCommands(lambda:fixedItems+optionsCreaterFun()),lambda:util.getListedItems(optionsCreaterFun,optionsDescriptorFun,fixedItems),promoter,parent)
